@@ -32,20 +32,34 @@ namespace MoveThisThere
             };
 
         private static Dictionary<Grid, PathStrings> _grids;
-        private static Dictionary<Grid, Label> _labels; 
-        private StackPanel _panel;
+        private static Dictionary<Grid, Label> _labels;
+        private StackPanel _gridPanel;
 
         public MainWindow()
         {
             InitializeUserInterface();
-            Content = _panel;
+            var bigGrid = new Grid();
+            var glc = new GridLengthConverter();
+            var convertFromString = glc.ConvertFromString("1*");
+            if (convertFromString != null)
+                bigGrid.RowDefinitions.Add(new RowDefinition { Height = (GridLength)convertFromString });
+            var fromString = glc.ConvertFromString("26");
+            if (fromString != null)
+                bigGrid.RowDefinitions.Add(new RowDefinition { Height = (GridLength)fromString });
+            var sv = new ScrollViewer { Content = _gridPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            bigGrid.Children.Add(sv);
+            Grid.SetRow(sv, 0);
+            var butt = new Button {Content = "Do"};
+            bigGrid.Children.Add(butt);
+            Grid.SetRow(butt, 1);
+            Content = bigGrid;
             InitializeComponent();
             Closed += OnWindowClosing;
         }
 
         private void InitializeUserInterface()
         {
-            _panel = new StackPanel();
+            _gridPanel = new StackPanel();
             _grids = new Dictionary<Grid, PathStrings>();
             _labels = new Dictionary<Grid, Label>();
             var sourcePaths = Settings.Default.SourcePaths.Split(',');
@@ -56,7 +70,7 @@ namespace MoveThisThere
                 var pathStrings = new PathStrings(sourcePaths[x], destinationPaths[x]);
                 var grid = AddFields(pathStrings);
                 _grids.Add(grid, pathStrings);
-                _panel.Children.Add(grid);
+                _gridPanel.Children.Add(grid);
             }
         }
         
@@ -98,7 +112,10 @@ namespace MoveThisThere
                 grid.RowDefinitions.Add(row);
             }
 
-            var headerLabel = new Label{Content = pathStrings.SourcePath + " --> " + pathStrings.DestinationPath, FontWeight = FontWeights.Bold};
+            var displayString = pathStrings.SourcePath + " --> " + pathStrings.DestinationPath;
+            if (displayString.Equals(" --> "))
+                displayString = "Unspecified";
+            var headerLabel = new Label{Content = displayString, FontWeight = FontWeights.Bold};
             _labels.Add(grid, headerLabel);
             Grid.SetColumn(headerLabel, 1);
             Grid.SetRow(headerLabel, 0);
@@ -153,7 +170,7 @@ namespace MoveThisThere
             return grid;
         }
 
-        private void OnClick(object sender, RoutedEventArgs routedEventArgs)
+        private static void OnClick(object sender, RoutedEventArgs routedEventArgs)
         {
             var folderBrowserDialog = new FolderBrowserDialog();
             if (folderBrowserDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
@@ -182,7 +199,7 @@ namespace MoveThisThere
             var ps = new PathStrings("", "");
             var x = AddFields(ps);
             _grids.Add(x, ps);
-            _panel.Children.Add(x);
+            _gridPanel.Children.Add(x);
         }
 
         private void RemoveFields(object sender, RoutedEventArgs args)
@@ -190,7 +207,7 @@ namespace MoveThisThere
             if (_grids.Count == 1) return;
             var x = (Button) sender;
 
-            if (!_labels[(Grid) x.Parent].Content.Equals(" --> "))
+            if (!_labels[(Grid)x.Parent].Content.Equals("Unspecified"))
             {
                 var messageBoxResult = System.Windows.MessageBox.Show("Are you sure you would like to delete this?",
                     "Delete Confirmation", MessageBoxButton.YesNo);
@@ -199,7 +216,7 @@ namespace MoveThisThere
 
             var y = (Grid)x.Parent;
             _grids.Remove(y);
-            _panel.Children.Remove(y);
+            _gridPanel.Children.Remove(y);
         }
     }
 }
