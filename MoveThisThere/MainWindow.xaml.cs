@@ -1,6 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace MoveThisThere
 {
@@ -20,9 +23,11 @@ namespace MoveThisThere
         private static readonly string[] RowHeights =
             {
                 "24",
+                "24",
                 "24"
             };
 
+        private List<Grid> _grids; 
         public MainWindow()
         {
             InitializeUserInterface();
@@ -32,14 +37,20 @@ namespace MoveThisThere
         private void InitializeUserInterface()
         {
             panel = new StackPanel();
-
-            AddFields(null, null);
-            AddFields(null, null);
-            AddFields(null, null);
+            _grids = new List<Grid>();
+            var z = AddFields();
+            _grids.Add(z);
+            panel.Children.Add(z);
+            var y = AddFields();
+            _grids.Add(y);
+            panel.Children.Add(y);
+            var x = AddFields();
+            _grids.Add(x);
+            panel.Children.Add(x);
             Content = panel;
         }
 
-        private void AddFields(object sender, RoutedEventArgs args)
+        private Grid AddFields()
         {
             var myGridLengthConverter = new GridLengthConverter();
             var grid = new Grid();
@@ -59,31 +70,41 @@ namespace MoveThisThere
             {
                 grid.RowDefinitions.Add(row);
             }
+
             var plusBtn = new Button();
             plusBtn.Click += AddFields;
             Grid.SetColumn(plusBtn, 0);
-            Grid.SetRow(plusBtn, 0);
+            Grid.SetRow(plusBtn, 1);
+
             var minusBtn = new Button();
+            minusBtn.Click += RemoveFields;
             Grid.SetColumn(minusBtn, 0);
-            Grid.SetRow(minusBtn, 1);
-            var sourceLabel = new Label();
+            Grid.SetRow(minusBtn, 2);
+
+            var sourceLabel = new Label {Content = "Source Directory:"};
             Grid.SetColumn(sourceLabel, 1);
-            Grid.SetRow(sourceLabel, 0);
-            var destLabel = new Label();
+            Grid.SetRow(sourceLabel, 1);
+
+            var destLabel = new Label {Content = "Destination Directory:"};
             Grid.SetColumn(destLabel, 1);
-            Grid.SetRow(destLabel, 1);
+            Grid.SetRow(destLabel, 2);
+
             var sourceBox = new TextBox();
             Grid.SetColumn(sourceBox, 2);
-            Grid.SetRow(sourceBox, 0);
+            Grid.SetRow(sourceBox, 1);
+
             var destBox = new TextBox();
             Grid.SetColumn(destBox, 2);
-            Grid.SetRow(destBox, 1);
-            var sourceBtn = new Button();
+            Grid.SetRow(destBox, 2);
+
+            var sourceBtn = new Button {Content = "Select"};
             Grid.SetColumn(sourceBtn, 3);
-            Grid.SetRow(sourceBtn, 0);
-            var destBtn = new Button();
+            Grid.SetRow(sourceBtn, 1);
+
+            var destBtn = new Button {Content = "Select"};
             Grid.SetColumn(destBtn, 3);
-            Grid.SetRow(destBtn, 1);
+            Grid.SetRow(destBtn, 2);
+
             grid.Children.Add(plusBtn);
             grid.Children.Add(minusBtn);
             grid.Children.Add(sourceLabel);
@@ -92,7 +113,24 @@ namespace MoveThisThere
             grid.Children.Add(destBox);
             grid.Children.Add(sourceBtn);
             grid.Children.Add(destBtn);
-            panel.Children.Add(grid);
+
+            return grid;
+        }
+
+        private void AddFields(object sender, RoutedEventArgs args)
+        {
+            var x = AddFields();
+            _grids.Add(x);
+            panel.Children.Add(x);
+        }
+
+        private void RemoveFields(object sender, RoutedEventArgs args)
+        {
+            if (_grids.Count == 1) return;
+            var x = (Button) sender;
+            var y = (Grid) VisualTreeHelper.GetParent(x);
+            _grids.Remove(y);
+            panel.Children.Remove(y);
         }
     }
 }
