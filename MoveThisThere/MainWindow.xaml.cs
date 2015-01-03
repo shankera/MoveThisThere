@@ -4,8 +4,11 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Forms;
 using MoveThisThere.Properties;
+using Button = System.Windows.Controls.Button;
+using Label = System.Windows.Controls.Label;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace MoveThisThere
 {
@@ -16,19 +19,20 @@ namespace MoveThisThere
     {
         private static readonly string[] ColWidths =
             {
-                "24",
+                "26",
                 "125",
                 "1*",
                 "60"
             };
         private static readonly string[] RowHeights =
             {
-                "24",
-                "24",
-                "24"
+                "26",
+                "26",
+                "26"
             };
 
         private static Dictionary<Grid, PathStrings> _grids;
+        private static Dictionary<Grid, Label> _labels; 
         private StackPanel _panel;
 
         public MainWindow()
@@ -43,13 +47,15 @@ namespace MoveThisThere
         {
             _panel = new StackPanel();
             _grids = new Dictionary<Grid, PathStrings>();
+            _labels = new Dictionary<Grid, Label>();
             var sourcePaths = Settings.Default.SourcePaths.Split(',');
             var destinationPaths = Settings.Default.DestinationPaths.Split(',');
             var total = Settings.Default.Fields.Equals("") ? 1 : Int32.Parse(Settings.Default.Fields);
             for (var x = 0; x < total; x++)
             {
-                var grid = AddFields(sourcePaths[x], destinationPaths[x]);
-                _grids.Add(grid, new PathStrings(sourcePaths[x], destinationPaths[x]));
+                var pathStrings = new PathStrings(sourcePaths[x], destinationPaths[x]);
+                var grid = AddFields(pathStrings);
+                _grids.Add(grid, pathStrings);
                 _panel.Children.Add(grid);
             }
         }
@@ -71,7 +77,7 @@ namespace MoveThisThere
             Settings.Default.Save();
         }
 
-        private Grid AddFields(string sourcePath, string destPath)
+        private Grid AddFields(PathStrings pathStrings)
         {
             var myGridLengthConverter = new GridLengthConverter();
             var grid = new Grid();
@@ -92,6 +98,12 @@ namespace MoveThisThere
                 grid.RowDefinitions.Add(row);
             }
 
+            var headerLabel = new Label{Content = pathStrings.SourcePath + " --> " + pathStrings.DestinationPath, FontWeight = FontWeights.Bold};
+            _labels.Add(grid, headerLabel);
+            Grid.SetColumn(headerLabel, 1);
+            Grid.SetRow(headerLabel, 0);
+            Grid.SetColumnSpan(headerLabel, 3);
+
             var plusBtn = new Button();
             plusBtn.Click += AddFields;
             Grid.SetColumn(plusBtn, 0);
@@ -110,53 +122,66 @@ namespace MoveThisThere
             Grid.SetColumn(destLabel, 1);
             Grid.SetRow(destLabel, 2);
 
-            var sourceBox = new TextBox {Text = sourcePath, Name = "sourceDir"};
-            sourceBox.TextChanged += textChangedEventHandler;
-            Grid.SetColumn(sourceBox, 2);
-            Grid.SetRow(sourceBox, 1);
+            pathStrings.SourceBox.TextChanged += textChangedEventHandler;
+            Grid.SetColumn(pathStrings.SourceBox, 2);
+            Grid.SetRow(pathStrings.SourceBox, 1);
 
-            var destBox = new TextBox { Text = destPath, Name = "destDir" };
-            destBox.TextChanged += textChangedEventHandler;
-            Grid.SetColumn(destBox, 2);
-            Grid.SetRow(destBox, 2);
+            pathStrings.DestinationBox.TextChanged += textChangedEventHandler;
+            Grid.SetColumn(pathStrings.DestinationBox, 2);
+            Grid.SetRow(pathStrings.DestinationBox, 2);
 
-            var sourceBtn = new Button {Content = "Select"};
+            var sourceBtn = new Button {Content = "Select", Name = "sourceButton"};
+            sourceBtn.Click += OnClick;
             Grid.SetColumn(sourceBtn, 3);
             Grid.SetRow(sourceBtn, 1);
 
-            var destBtn = new Button {Content = "Select"};
+            var destBtn = new Button { Content = "Select", Name = "destinationButton"};
+            destBtn.Click += OnClick;
             Grid.SetColumn(destBtn, 3);
             Grid.SetRow(destBtn, 2);
 
+            grid.Children.Add(headerLabel);
             grid.Children.Add(plusBtn);
             grid.Children.Add(minusBtn);
             grid.Children.Add(sourceLabel);
             grid.Children.Add(destLabel);
-            grid.Children.Add(sourceBox);
-            grid.Children.Add(destBox);
+            grid.Children.Add(pathStrings.SourceBox);
+            grid.Children.Add(pathStrings.DestinationBox);
             grid.Children.Add(sourceBtn);
             grid.Children.Add(destBtn);
 
             return grid;
         }
 
+        private void OnClick(object sender, RoutedEventArgs routedEventArgs)
+        {
+            var folderBrowserDialog = new FolderBrowserDialog();
+            if (folderBrowserDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            var button = sender as Button;
+            if (button != null && button.Name.Equals("sourceButton"))
+            {
+                _grids[(Grid) button.Parent].SourcePath = folderBrowserDialog.SelectedPath;
+                    
+            }
+            else if (button != null && button.Name.Equals("destinationButton"))
+            {
+                _grids[(Grid) button.Parent].DestinationPath = folderBrowserDialog.SelectedPath;
+            }
+        }
+
         private static void textChangedEventHandler(object sender, TextChangedEventArgs args)
         {
             var textBox = sender as TextBox;
-            if (textBox != null && textBox.Name.Equals("sourceDir"))
-            {
-                _grids[(Grid)textBox.Parent].SourcePath = textBox.Text;
-            } 
-            else if (textBox != null && textBox.Name.Equals("destDir"))
-            {
-                _grids[(Grid)textBox.Parent].DestinationPath = textBox.Text;
+            if (textBox != null) { 
+                _labels[(Grid) textBox.Parent].Content = _grids[(Grid) textBox.Parent].SourcePath + " --> " + _grids[(Grid) textBox.Parent].DestinationPath;
             }
         }
 
         private void AddFields(object sender, RoutedEventArgs args)
         {
-            var x = AddFields("","");
-            _grids.Add(x, new PathStrings("",""));
+            var ps = new PathStrings("", "");
+            var x = AddFields(ps);
+            _grids.Add(x, ps);
             _panel.Children.Add(x);
         }
 
@@ -164,7 +189,15 @@ namespace MoveThisThere
         {
             if (_grids.Count == 1) return;
             var x = (Button) sender;
-            var y = (Grid) VisualTreeHelper.GetParent(x);
+
+            if (!_labels[(Grid) x.Parent].Content.Equals(" --> "))
+            {
+                var messageBoxResult = System.Windows.MessageBox.Show("Are you sure you would like to delete this?",
+                    "Delete Confirmation", MessageBoxButton.YesNo);
+                if (messageBoxResult != MessageBoxResult.Yes) return;
+            }
+
+            var y = (Grid)x.Parent;
             _grids.Remove(y);
             _panel.Children.Remove(y);
         }
