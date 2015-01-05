@@ -5,10 +5,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using MoveThisThere.Properties;
 using Button = System.Windows.Controls.Button;
 using Label = System.Windows.Controls.Label;
-using TextBox = System.Windows.Controls.TextBox;
 
 namespace MoveThisThere
 {
@@ -17,33 +18,49 @@ namespace MoveThisThere
     /// </summary>
     public partial class MainWindow
     {
+        private new const string MinHeight = "26";
+        private const string LabelSeperator = " --> ";
         private static readonly string[] ColWidths =
             {
-                "26",
+                MinHeight,
                 "125",
                 "1*",
                 "60"
             };
         private static readonly string[] RowHeights =
             {
-                "26",
-                "26",
-                "26"
+                MinHeight,
+                MinHeight,
+                MinHeight
             };
 
         private static Dictionary<Grid, PathStrings> _grids;
         private static Dictionary<Grid, Label> _labels;
-        private StackPanel _gridPanel;
+        private readonly StackPanel _gridPanel;
 
         public MainWindow()
         {
-            InitializeUserInterface();
+            _gridPanel = new StackPanel();
+            _grids = new Dictionary<Grid, PathStrings>();
+            _labels = new Dictionary<Grid, Label>();
+            var sourcePaths = Settings.Default.SourcePaths.Split(',');
+            var destinationPaths = Settings.Default.DestinationPaths.Split(',');
+            var total = String.IsNullOrWhiteSpace(Settings.Default.Fields) ? 1 : Int32.Parse(Settings.Default.Fields);
+            for (var x = 0; x < total; x++)
+            {
+                var pathStrings = new PathStrings(sourcePaths[x], destinationPaths[x]);
+                var grid = AddFields(pathStrings);
+                _grids.Add(grid, pathStrings);
+                _gridPanel.Children.Add(grid);
+                UpdateLabels(grid);
+            }
+
             var bigGrid = new Grid();
             var glc = new GridLengthConverter();
             var convertFromString = glc.ConvertFromString("1*");
             if (convertFromString != null)
                 bigGrid.RowDefinitions.Add(new RowDefinition { Height = (GridLength)convertFromString });
-            var fromString = glc.ConvertFromString("26");
+            var fromString = glc.ConvertFromString(MinHeight);
             if (fromString != null)
                 bigGrid.RowDefinitions.Add(new RowDefinition { Height = (GridLength)fromString });
             var sv = new ScrollViewer { Content = _gridPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -56,24 +73,6 @@ namespace MoveThisThere
             InitializeComponent();
             Closed += OnWindowClosing;
         }
-
-        private void InitializeUserInterface()
-        {
-            _gridPanel = new StackPanel();
-            _grids = new Dictionary<Grid, PathStrings>();
-            _labels = new Dictionary<Grid, Label>();
-            var sourcePaths = Settings.Default.SourcePaths.Split(',');
-            var destinationPaths = Settings.Default.DestinationPaths.Split(',');
-            var total = Settings.Default.Fields.Equals("") ? 1 : Int32.Parse(Settings.Default.Fields);
-            for (var x = 0; x < total; x++)
-            {
-                var pathStrings = new PathStrings(sourcePaths[x], destinationPaths[x]);
-                var grid = AddFields(pathStrings);
-                _grids.Add(grid, pathStrings);
-                _gridPanel.Children.Add(grid);
-            }
-        }
-        
         public void OnWindowClosing(object sender, EventArgs eventArgs)
         {
             Settings.Default.Fields = _grids.Count.ToString(CultureInfo.InvariantCulture);
@@ -112,10 +111,7 @@ namespace MoveThisThere
                 grid.RowDefinitions.Add(row);
             }
 
-            var displayString = pathStrings.SourcePath + " --> " + pathStrings.DestinationPath;
-            if (displayString.Equals(" --> "))
-                displayString = "Unspecified";
-            var headerLabel = new Label{Content = displayString, FontWeight = FontWeights.Bold};
+            var headerLabel = new Label{FontWeight = FontWeights.Bold};
             _labels.Add(grid, headerLabel);
             Grid.SetColumn(headerLabel, 1);
             Grid.SetRow(headerLabel, 0);
@@ -126,10 +122,52 @@ namespace MoveThisThere
             Grid.SetColumn(plusBtn, 0);
             Grid.SetRow(plusBtn, 1);
 
+            var plus = new Polygon
+            {
+                Fill = Brushes.White,
+                Stroke = Brushes.Black,
+                StrokeThickness = 0.5,
+                IsHitTestVisible = false,
+                Points = new PointCollection
+                {
+                    new Point(3, 10),
+                    new Point(10, 10),
+                    new Point(10, 3),
+                    new Point(16, 3),
+                    new Point(16, 10),
+                    new Point(23, 10),
+                    new Point(23, 16),
+                    new Point(16, 16),
+                    new Point(16, 23),
+                    new Point(10, 23),
+                    new Point(10, 16),
+                    new Point(3, 16)
+                }
+            };
+            Grid.SetColumn(plus, 0);
+            Grid.SetRow(plus, 1);
+
             var minusBtn = new Button();
             minusBtn.Click += RemoveFields;
             Grid.SetColumn(minusBtn, 0);
             Grid.SetRow(minusBtn, 2);
+
+            var minus = new Polygon
+            {
+                Fill = Brushes.White,
+                Stroke = Brushes.Black,
+                StrokeThickness = 0.5,
+                IsHitTestVisible = false,
+                Points = new PointCollection
+                {
+                    new Point(3, 10),
+                    new Point(23, 10),
+                    new Point(23, 16),
+                    new Point(3, 16)
+                }
+            };
+            Grid.SetColumn(minus, 0);
+            Grid.SetRow(minus, 2);
 
             var sourceLabel = new Label {Content = "Source Directory:"};
             Grid.SetColumn(sourceLabel, 1);
@@ -139,11 +177,9 @@ namespace MoveThisThere
             Grid.SetColumn(destLabel, 1);
             Grid.SetRow(destLabel, 2);
 
-            pathStrings.SourceBox.TextChanged += textChangedEventHandler;
             Grid.SetColumn(pathStrings.SourceBox, 2);
             Grid.SetRow(pathStrings.SourceBox, 1);
 
-            pathStrings.DestinationBox.TextChanged += textChangedEventHandler;
             Grid.SetColumn(pathStrings.DestinationBox, 2);
             Grid.SetRow(pathStrings.DestinationBox, 2);
 
@@ -159,7 +195,9 @@ namespace MoveThisThere
 
             grid.Children.Add(headerLabel);
             grid.Children.Add(plusBtn);
+            grid.Children.Add(plus);
             grid.Children.Add(minusBtn);
+            grid.Children.Add(minus);
             grid.Children.Add(sourceLabel);
             grid.Children.Add(destLabel);
             grid.Children.Add(pathStrings.SourceBox);
@@ -178,28 +216,30 @@ namespace MoveThisThere
             if (button != null && button.Name.Equals("sourceButton"))
             {
                 _grids[(Grid) button.Parent].SourcePath = folderBrowserDialog.SelectedPath;
-                    
+                UpdateLabels((Grid)button.Parent);
+
             }
             else if (button != null && button.Name.Equals("destinationButton"))
             {
-                _grids[(Grid) button.Parent].DestinationPath = folderBrowserDialog.SelectedPath;
+                _grids[(Grid)button.Parent].DestinationPath = folderBrowserDialog.SelectedPath;
+                UpdateLabels((Grid)button.Parent);
             }
         }
 
-        private static void textChangedEventHandler(object sender, TextChangedEventArgs args)
+        private static void UpdateLabels(Grid grid)
         {
-            var textBox = sender as TextBox;
-            if (textBox != null) { 
-                _labels[(Grid) textBox.Parent].Content = _grids[(Grid) textBox.Parent].SourcePath + " --> " + _grids[(Grid) textBox.Parent].DestinationPath;
-            }
+            _labels[grid].Content = _grids[grid].SourcePath + LabelSeperator + _grids[grid].DestinationPath;
+            if (_labels[grid].Content.Equals(LabelSeperator))
+                _labels[grid].Content = "Unspecified";
         }
 
         private void AddFields(object sender, RoutedEventArgs args)
         {
-            var ps = new PathStrings("", "");
-            var x = AddFields(ps);
-            _grids.Add(x, ps);
-            _gridPanel.Children.Add(x);
+            var ps = new PathStrings();
+            var grid = AddFields(ps);
+            _grids.Add(grid, ps);
+            _gridPanel.Children.Add(grid);
+            UpdateLabels(grid);
         }
 
         private void RemoveFields(object sender, RoutedEventArgs args)

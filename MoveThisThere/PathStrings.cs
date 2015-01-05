@@ -1,10 +1,21 @@
-﻿using System.Windows.Controls;
+﻿using System.Dynamic;
+using System.Windows.Controls;
 
 namespace MoveThisThere
 {
     class PathStrings
     {
+        public PathStrings()
+        {
+            SetParams("","");
+        }
+
         public PathStrings(string source, string destination)
+        {
+            SetParams(source, destination);
+        }
+
+        private void SetParams(string source, string destination)
         {
             SourceBox = new TextBox {Text = source, IsReadOnly = true};
             DestinationBox = new TextBox {Text = destination, IsReadOnly = true};
