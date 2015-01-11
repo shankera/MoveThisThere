@@ -1,33 +1,43 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace MoveThisThere.Lib
 {
     public class FileMover{
-        private static FileMover _instance;
 
         private FileMover() {}
 
-        public static FileMover Instance
+        public static bool Move(string sourcePath, string destPath)
         {
-            get { return _instance ?? (_instance = new FileMover()); }
+            var destDir = new DirectoryInfo(destPath);
+            if (!destDir.Exists) Directory.CreateDirectory(destPath);
+
+            var sourceDir = new DirectoryInfo(sourcePath);
+
+            MoveAllInFolder(sourceDir, sourcePath, destPath);
+            return true;
         }
 
-        public bool Move(string sourcePath, string destPath)
+        private static void MoveAllInFolder(DirectoryInfo sourceDir, string sourcePath, string destPath)
         {
-            var dirInfo = new DirectoryInfo(destPath);
-            if (!dirInfo.Exists) Directory.CreateDirectory(destPath);
-            var files = Directory.GetFiles(sourcePath);
-            foreach (var file in files)
+            foreach (var dir in sourceDir.GetDirectories())
             {
-                var fileLocation = file.Remove(file.IndexOf(sourcePath, System.StringComparison.Ordinal), sourcePath.Length);
-                Console.Out.WriteLine(sourcePath);
-                Console.Out.WriteLine(destPath);
-                Console.Out.WriteLine(file);
-                Console.Out.WriteLine(fileLocation);
+                MoveAllInFolder(dir, sourcePath, destPath);
             }
-            return false;
+
+            foreach (var file in sourceDir.GetFiles())
+            {
+                var destpathandfile = RemovePathorFileName(sourcePath, file.FullName);
+                var filelessPath = RemovePathorFileName(file.Name, destpathandfile);
+                if (!new DirectoryInfo(destPath + destpathandfile).Exists) Directory.CreateDirectory(destPath + filelessPath);
+                File.Copy(file.FullName, destPath + destpathandfile);
+            }
         }
+
+        private static string RemovePathorFileName(string remove, string keep)
+        {
+            return keep.Remove(keep.IndexOf(remove, StringComparison.Ordinal), remove.Length);
+        }
+
     }
 }

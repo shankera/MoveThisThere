@@ -62,25 +62,33 @@ namespace MoveThisThere
             var fromString = glc.ConvertFromString(MinHeight);
             if (fromString != null)
                 bigGrid.RowDefinitions.Add(new RowDefinition { Height = (GridLength)fromString });
+            if (convertFromString != null)
+                bigGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = (GridLength)convertFromString });
+            bigGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(75) });
+
             var sv = new ScrollViewer { Content = _gridPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             bigGrid.Children.Add(sv);
             Grid.SetRow(sv, 0);
+            Grid.SetColumnSpan(sv, 2);
+
             var doButton = new Button {Content = "Do"};
             doButton.Click += DoOnClick;
             bigGrid.Children.Add(doButton);
             Grid.SetRow(doButton, 1);
+            Grid.SetColumn(doButton, 1);
+
             Content = bigGrid;
             InitializeComponent();
             Closed += OnWindowClosing;
         }
 
-        private void DoOnClick(object sender, RoutedEventArgs routedEventArgs)
+        private static void DoOnClick(object sender, RoutedEventArgs routedEventArgs)
         {
             Console.Out.WriteLine("click");
             foreach (var pathStrings in _grids)
             {
                 Console.Out.WriteLine("loop");
-                FileMover.Instance.Move(pathStrings.Value.SourcePath, pathStrings.Value.DestinationPath);
+                FileMover.Move(pathStrings.Value.SourcePath, pathStrings.Value.DestinationPath);
             }
         }
 
@@ -150,6 +158,10 @@ namespace MoveThisThere
 
             var y = (Grid)x.Parent;
             _grids.Remove(y);
+            foreach (var pathStringse in _grids)
+            {
+                Console.Out.WriteLine(pathStringse.ToString());
+            }
             _gridPanel.Children.Remove(y);
         }
     }
