@@ -1,6 +1,4 @@
-﻿using System.Windows.Controls;
-
-namespace MoveThisThere
+﻿namespace MoveThisThere
 {
     public class PathStrings
     {
