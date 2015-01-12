@@ -66,6 +66,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="MainWindowClickers.cs" />
     <Compile Include="MainWindowUI.cs" />
     <Compile Include="PathStrings.cs" />
     <Compile Include="MainWindow.xaml.cs">

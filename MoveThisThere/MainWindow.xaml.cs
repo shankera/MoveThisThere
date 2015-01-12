@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
-using MoveThisThere.Lib;
 using MoveThisThere.Properties;
 using Button = System.Windows.Controls.Button;
 using Label = System.Windows.Controls.Label;
@@ -82,16 +79,6 @@ namespace MoveThisThere
             Closed += OnWindowClosing;
         }
 
-        private static void DoOnClick(object sender, RoutedEventArgs routedEventArgs)
-        {
-            Console.Out.WriteLine("click");
-            foreach (var pathStrings in _grids)
-            {
-                Console.Out.WriteLine("loop");
-                FileMover.Move(pathStrings.Value.SourcePath, pathStrings.Value.DestinationPath);
-            }
-        }
-
         public void OnWindowClosing(object sender, EventArgs eventArgs)
         {
             Settings.Default.Fields = _grids.Count.ToString(CultureInfo.InvariantCulture);
@@ -110,24 +97,6 @@ namespace MoveThisThere
         }
 
 
-        private static void OnClick(object sender, RoutedEventArgs routedEventArgs)
-        {
-            var folderBrowserDialog = new FolderBrowserDialog();
-            if (folderBrowserDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            var button = sender as Button;
-            if (button != null && button.Name.Equals("sourceButton"))
-            {
-                _grids[(Grid) button.Parent].SourcePath = folderBrowserDialog.SelectedPath;
-                UpdateLabels((Grid)button.Parent);
-
-            }
-            else if (button != null && button.Name.Equals("destinationButton"))
-            {
-                _grids[(Grid)button.Parent].DestinationPath = folderBrowserDialog.SelectedPath;
-                UpdateLabels((Grid)button.Parent);
-            }
-        }
-
         private static void UpdateLabels(Grid grid)
         {
             _labels[grid].Content = _grids[grid].SourcePath + LabelSeperator + _grids[grid].DestinationPath;
@@ -135,34 +104,5 @@ namespace MoveThisThere
                 _labels[grid].Content = "Unspecified";
         }
 
-        private void AddFields(object sender, RoutedEventArgs args)
-        {
-            var ps = new PathStrings();
-            var grid = AddFields(ps);
-            _grids.Add(grid, ps);
-            _gridPanel.Children.Add(grid);
-            UpdateLabels(grid);
-        }
-
-        private void RemoveFields(object sender, RoutedEventArgs args)
-        {
-            if (_grids.Count == 1) return;
-            var x = (Button) sender;
-
-            if (!_labels[(Grid)x.Parent].Content.Equals("Unspecified"))
-            {
-                var messageBoxResult = System.Windows.MessageBox.Show("Are you sure you would like to delete this?",
-                    "Delete Confirmation", MessageBoxButton.YesNo);
-                if (messageBoxResult != MessageBoxResult.Yes) return;
-            }
-
-            var y = (Grid)x.Parent;
-            _grids.Remove(y);
-            foreach (var pathStringse in _grids)
-            {
-                Console.Out.WriteLine(pathStringse.ToString());
-            }
-            _gridPanel.Children.Remove(y);
-        }
     }
 }

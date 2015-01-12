@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Button = System.Windows.Controls.Button;
+using Label = System.Windows.Controls.Label;
 
 namespace MoveThisThere
 {
