@@ -1,9 +1,8 @@
-﻿using System.Dynamic;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace MoveThisThere
 {
-    class PathStrings
+    public class PathStrings
     {
         public PathStrings()
         {
@@ -17,24 +16,12 @@ namespace MoveThisThere
 
         private void SetParams(string source, string destination)
         {
-            SourceBox = new TextBox {Text = source, IsReadOnly = true};
-            DestinationBox = new TextBox {Text = destination, IsReadOnly = true};
+            SourcePath = source;
+            DestinationPath = destination;
         }
 
-        public TextBox SourceBox { get; set; }
+        public string SourcePath { get; set; }
 
-        public TextBox DestinationBox { get; set; }
-
-        public string SourcePath 
-        {
-            get { return SourceBox.Text; }
-            set { SourceBox.Text = value; }
-        }
-
-        public string DestinationPath
-        {
-            get { return DestinationBox.Text; }
-            set { DestinationBox.Text = value; }
-        }
+        public string DestinationPath { get; set; }
     }
 }
